@@ -2,19 +2,22 @@ import { Instance, SnapshotOut, types } from "mobx-state-tree"
 import { CharacterModel, CharacterSnapshot } from "../character/character"
 import { CharacterApi } from "../../services/api/character-api"
 import { withEnvironment } from "../extensions/with-environment"
+import { withReferencePool } from "mst-reference-pool"
 
 /**
  * Example store containing Rick and Morty characters
  */
 export const CharacterStoreModel = types
-  .model("CharacterStore")
-  .props({
-    characters: types.optional(types.array(CharacterModel), []),
+  .model("CharacterStore", {
+    pool: types.array(CharacterModel),
+    characters: types.array(types.reference(CharacterModel)),
   })
+  .extend(withReferencePool(CharacterModel))
   .extend(withEnvironment)
   .actions((self) => ({
     saveCharacters: (characterSnapshots: CharacterSnapshot[]) => {
-      self.characters.replace(characterSnapshots)
+      const characters = self.addAllToPool(characterSnapshots)
+      self.characters.replace(characters)
     },
   }))
   .actions((self) => ({
